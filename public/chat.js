@@ -5,6 +5,15 @@ let joinButton = document.getElementById("join");
 let userVideo = document.getElementById("user-video");
 let peerVideo = document.getElementById("peer-video");
 let roomInput = document.getElementById("roomName");
+
+let divButtonGroup = document.getElementById("btn-group");
+let muteButton = document.getElementById("muteButton");
+let hideCameraButton = document.getElementById("hideCameraButton");
+let leaveRoomButton = document.getElementById("leaveRoomButton");
+
+let muteFlag = false;
+let hideCameraFlag = false;
+
 let roomName;
 let creator = false;
 let rtcPeerConnection;
@@ -28,6 +37,29 @@ joinButton.addEventListener("click", function() {
   }
 });
 
+muteButton.addEventListener("click", function() {
+  muteFlag = !muteFlag;
+  if (muteFlag) {
+    userStream.getTracks()[0].enabled = false;
+    muteButton.textContent = "Unmute";
+  } else {
+    userStream.getTracks()[0].enabled = true;
+    muteButton.textContent = "Mute";
+  }
+});
+
+hideCameraButton.addEventListener("click", function() {
+  hideCameraFlag = !hideCameraFlag;
+
+  if (hideCameraFlag) {
+    userStream.getTracks()[1].enabled = false;
+    hideCameraButton.textContent = "Show Camera";
+  } else {
+    userStream.getTracks()[1].enabled = true;
+    hideCameraButton.textContent = "Hide Camera";
+  }
+});
+
 // Triggered when a room is successfully created:
 
 socket.on("created", function() {
@@ -36,12 +68,13 @@ socket.on("created", function() {
   navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      video: { width: 1280, height: 720 },
+      video: { width: 500, height: 500 },
     })
     .then(function (stream) {
       /* use the stream */
       userStream = stream;
       divVideoChatLobby.style = "display:none";
+      divButtonGroup.style = "display:flex";
       userVideo.srcObject = stream;
       userVideo.onloadedmetadata = function (e) {
         userVideo.play();
@@ -61,12 +94,13 @@ socket.on("joined", function() {
   navigator.mediaDevices
     .getUserMedia({
       audio: true,
-      video: { width: 1280, height: 720 },
+      video: { width: 500, height: 500 },
     })
     .then(function (stream) {
       /* use the stream */
       userStream = stream;
       divVideoChatLobby.style = "display:none";
+      divButtonGroup.style = "display:flex";
       userVideo.srcObject = stream;
       userVideo.onloadedmetadata = function (e) {
         userVideo.play();
@@ -141,6 +175,48 @@ socket.on("offer", function(offer) {
 socket.on("answer", function (answer) {
   rtcPeerConnection.setRemoteDescription(answer);
 });
+
+
+// Cleaning the code to bring these two closer together:
+
+leaveRoomButton.addEventListener("click", function() {
+  socket.emit("leave", roomName);
+  divVideoChatLobby.style = "display:block";
+  divButtonGroup.style = "display:none";
+  
+  if (userVideo.srcObject) {
+    userVideo.srcObject.getTracks()[0].stop();
+    userVideo.srcObject.getTracks()[1].stop();
+    // userVideo.srcObject.getTracks().forEach((track) => track.stop());
+  }
+
+  if (peerVideo.srcObject) {
+    peerVideo.srcObject.getTracks()[0].stop();
+    peerVideo.srcObject.getTracks()[1].stop();
+  }
+
+  if (rtcPeerConnection) {
+    rtcPeerConnection.ontrack = null;
+    rtcPeerConnection.onicecandidate = null;
+    rtcPeerConnection.close();
+    rtcPeerConnection = null;
+  }
+});
+
+socket.on("leave", function() {
+  if (rtcPeerConnection) {
+    rtcPeerConnection.ontrack = null;
+    rtcPeerConnection.onicecandidate = null;
+    rtcPeerConnection.close();
+    rtcPeerConnection = null;
+  }
+
+  if (peerVideo.srcObject) {
+    peerVideo.srcObject.getTracks()[0].stop();
+    peerVideo.srcObject.getTracks()[1].stop();
+  }
+  
+}
 
 // Implementing the OnIceCandidateFunction which is part of the RTCPeerConnection Interface:
 
