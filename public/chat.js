@@ -1,4 +1,5 @@
-let socket = io.connect("http://localhost:4000");
+// let socket = io.connect("http://localhost:4000");
+let socket = io();
 let divVideoChatLobby = document.getElementById("video-chat-lobby");
 let divVideoChat = document.getElementById("video-chat-room");
 let joinButton = document.getElementById("join");
@@ -128,6 +129,7 @@ socket.on("ready", function() {
     rtcPeerConnection.ontrack = OnTrackFunction;
     rtcPeerConnection.addTrack(userStream.getTracks()[0], userStream); // audio
     rtcPeerConnection.addTrack(userStream.getTracks()[1], userStream); // video
+    
     rtcPeerConnection
       .createOffer()
       .then((offer) => {
@@ -204,6 +206,9 @@ leaveRoomButton.addEventListener("click", function() {
 });
 
 socket.on("leave", function() {
+  // This person is now the creator because they are the only person in the room:
+  creator = true;
+
   if (rtcPeerConnection) {
     rtcPeerConnection.ontrack = null;
     rtcPeerConnection.onicecandidate = null;
@@ -215,8 +220,8 @@ socket.on("leave", function() {
     peerVideo.srcObject.getTracks()[0].stop();
     peerVideo.srcObject.getTracks()[1].stop();
   }
-  
-}
+
+});
 
 // Implementing the OnIceCandidateFunction which is part of the RTCPeerConnection Interface:
 
