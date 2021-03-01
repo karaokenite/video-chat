@@ -1,4 +1,4 @@
-# video-chat
+# Basic Video Chat (Testing Purposes)
 
 A basic video application for preparation of v0.2.
 
